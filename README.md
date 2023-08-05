@@ -1,5 +1,5 @@
 # DearPyGui_Extend
-Extensions and custom widgets for [Dear Py GUI](http://github.com/hoffstadt/DearPyGui])
+Extensions and custom widgets for [Dear Py GUI](http://github.com/hoffstadt/DearPyGui)
 
 ## Movable Groups
 Add Drag'n'drop ability to groups ("swap" or "replace" behaviors):
