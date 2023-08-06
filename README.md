@@ -46,6 +46,6 @@ FileBrowser(
 	collapse_padding_str='#',
 	show_hidden_files=False,
 	filetype_filers=filetype_filers,
-	path_input_style=dpge.FileBrowse.BREADCRUMB,
+	path_input_style=FileBrowser.BREADCRUMB,
 ):
 ```
