@@ -34,13 +34,13 @@ Features:
 ![](./resources/fileseq_browser.gif)
 Usage:
 ```py
-import dearpygui_extend as dpge
+from dearpygui_extend.file_browser import FileBrowser
 
 filetype_filers = [
 	{ 'label': 'All files', 'formats': ['*'] },
 	{ 'label': 'Images', 'formats': ['jpg', 'png', 'gif'] },
 ]
-filebrowser = dpge.FileBrowser(
+FileBrowser(
 	initial_path='~/Downloads/images',
 	collapse_sequences=True,
 	collapse_padding_str='#',
