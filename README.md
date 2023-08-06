@@ -8,9 +8,9 @@ Add Drag'n'drop ability to groups ("swap" or "replace" behaviors):
 
 Usage:
 ```py
-import dearpygui_extend as dpge
+from dearpygui_extend.movable_group import MovableGroup
 
-with dpge.MovableGroup():
+with MovableGroup('Group 1'):
 	# regular dpg UI layout
 	dpg.add_text('Some text')
 	...
