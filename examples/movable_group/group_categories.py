@@ -1,5 +1,5 @@
 import dearpygui.dearpygui as dpg
-from dearpygui_extend.movable_group import MovableGroup
+import dearpygui_extend as dpge
 
 dpg.create_context()
 
@@ -29,17 +29,17 @@ with dpg.window(label='Example', width=400, pos=(0,20)):
 		with dpg.group():
 			dpg.add_text('Available Cards:')
 			for i, image in enumerate(images):
-				with MovableGroup(
+				with dpge.movable_group(
 					image, 
 					width=100,
-					drop_behavior=MovableGroup.REPLACE, 
+					drop_behavior=dpge.movable_group.REPLACE, 
 					category='cards', 
 					droppable_categories=[], 
 					drop_callback=on_drop,
 					on_drop_changes={
 						'category': 'slots',
 						'droppable_categories': ['slots','cards'],
-						'drop_behavior': MovableGroup.SWAP
+						'drop_behavior': dpge.movable_group.SWAP
 					},):
 
 					dpg.add_image(image)
@@ -48,7 +48,7 @@ with dpg.window(label='Example', width=400, pos=(0,20)):
 		with dpg.group(tag='slot_list'):
 			dpg.add_text('Selected Cards:')
 			for i in range(3):
-				with MovableGroup(
+				with dpge.movable_group(
 					title='', 
 					width=100, 
 					category='slots', 
@@ -59,7 +59,14 @@ with dpg.window(label='Example', width=400, pos=(0,20)):
 	with dpg.group():
 		dpg.add_text('', tag='status')
 		dpg.add_text('', tag='chosen_cards')
+		
 
+# apply green color to status text
+with dpg.theme(tag='green_text'):
+    with dpg.theme_component(dpg.mvText):
+       dpg.add_theme_color(dpg.mvThemeCol_Text, (0,255,0,255))
+dpg.bind_item_theme('status', 'green_text')
+dpg.bind_item_theme('chosen_cards', 'green_text')
 
 # information window
 with dpg.window(label='Info', width=400, pos=(410,20)):

@@ -8,13 +8,24 @@ Add Drag'n'drop ability to groups ("swap" or "replace" behaviors):
 
 Usage:
 ```py
-from dearpygui_extend.movable_group import MovableGroup
+import dearpygui.dearpygui as dpg
+import dearpygui_extend as dpge
 
-with MovableGroup('Group 1'):
-	# regular dpg UI layout
+with dpge.movable_group():
 	dpg.add_text('Some text')
 	...
 ```
+
+or
+```py
+import dearpygui.dearpygui as dpg
+import dearpygui_extend as dpge
+
+win = dpg.add_window(tag='window1')
+mg = dpge.add_movable_group(parent=win)
+text = dpg.add_text('Some text', parent=mg)
+```
+
 </br>
 
 ## Extended file browser

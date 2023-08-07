@@ -1,5 +1,5 @@
 import dearpygui.dearpygui as dpg
-from dearpygui_extend.movable_group import MovableGroup
+import dearpygui_extend as dpge
 
 dpg.create_context()
 
@@ -10,10 +10,10 @@ with dpg.window(label='window 1', width=300, pos=(0,10)):
 	
 	dpg.add_separator()
 
-	with MovableGroup('I only like my own window', same_window_only=True):
+	with dpge.movable_group('I only like my own window', same_window_only=True):
 		dpg.add_color_picker()
 
-	with MovableGroup('Yeah, me too', same_window_only=True):
+	with dpge.movable_group('Yeah, me too', same_window_only=True):
 		with dpg.table():
 			dpg.add_table_column(label='col 1')
 			dpg.add_table_column(label='col 2')
@@ -30,14 +30,18 @@ with dpg.window(label='window 2', width=300, pos=(320,10)):
 	dpg.add_separator()
 
 	title_color = (0,255,0,255)
-	with MovableGroup('I can\'t be moved to the left', same_window_only=True, title_color=title_color):
+	with dpge.movable_group('I can\'t be moved to the left', same_window_only=True, title_color=title_color):
 		dpg.add_button(label='A button')
 		dpg.add_text('... and some text')
 
-	with MovableGroup('Don\'t even try window 1', same_window_only=True, title_color=title_color):
+	with dpge.movable_group('Don\'t even try window 1', same_window_only=True, title_color=title_color):
 		dpg.add_slider_floatx(label='vector1', size=3)
 		dpg.add_slider_floatx(label='vector2', size=3)
 		dpg.add_slider_floatx(label='vector3', size=3)
+
+	with dpge.movable_group('But I can be moved within this window!', same_window_only=True, title_color=title_color):
+		dpg.add_input_text(label='Email', default_value='user@email.com')
+		dpg.add_input_text(label='Password', default_value='123456789', password=True)
 
 
 dpg.create_viewport()

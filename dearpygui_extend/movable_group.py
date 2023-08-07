@@ -18,6 +18,7 @@ class MovableGroup:
       on_drop_changes=None,
       drop_callback=None,
       user_data=None,
+      parent=None
       ):
 
       self.title = title   
@@ -33,6 +34,7 @@ class MovableGroup:
       self.drop_callback=drop_callback
       self.extra_user_data=user_data
       self.all_user_data=None
+      self.parent=parent
       self._payload_name = '_dpge_movable_group'
       self._theme_name = f'_dpge_movable_group_title_theme__{"_".join([str(x) for x in self.title_color])}'
 
@@ -48,15 +50,23 @@ class MovableGroup:
       internal_user_data['user']=self.extra_user_data
       self.all_user_data=internal_user_data
 
-   def __enter__(self):
+   def create_group(self):
       self.title = self.title or ''
-      container = dpg.add_group()
+      if self.parent:
+         container = dpg.add_group(parent=self.parent)
+      else:
+         container = dpg.add_group()
       self.group = dpg.add_group(parent=container, width=self.width, height=self.height, drop_callback=self.move, payload_type=self._payload_name, user_data=self.all_user_data)
       title_text = dpg.add_text(self.title, parent=self.group)
       with dpg.tooltip(parent=title_text):
          dpg.add_text(f'Drag to move group "{self.title}"')
          dpg.bind_item_theme(title_text, self._theme_name)
-      
+      with dpg.drag_payload(parent=self.group, payload_type=self._payload_name, drag_data=self.all_user_data):
+         dpg.add_text(f'Move "{self.title}"')
+      return self.group
+
+   def __enter__(self):
+      self.create_group()      
       dpg.push_container_stack(self.group)
       return self.group
   
@@ -105,7 +115,7 @@ class MovableGroup:
                         user_data[k] = v
                   dpg.configure_item(source, user_data=user_data)                
                
-               # drop callback (should this really happen BEFORE "on_drop_changes" ?)
+               # drop callback 
                if drop_callback: 
                   if drop_callback.__code__.co_argcount==0: drop_callback()
                   if drop_callback.__code__.co_argcount==1: drop_callback(source)
