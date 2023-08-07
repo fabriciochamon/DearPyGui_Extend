@@ -27,15 +27,10 @@ release = '0.0.1'
 
 
 # -- General configuration ---------------------------------------------------
-
-is_local = os.path.isdir('/home/fabriciochamon/Downloads/GITHUB_REPO/DearPyGui_Extend/')
-
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc']
-if is_local:
-	extensions.append('sphinx_rtd_theme')
+extensions = ['sphinx.ext.autodoc', 'sphinx_rtd_theme']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -47,16 +42,12 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 
 # -- Options for HTML output -------------------------------------------------
+# The theme to use for HTML and HTML Help pages.  See the documentation for
+# a list of builtin themes.
 
+html_theme = 'sphinx_rtd_theme'
 
-if is_local:
-
-	# The theme to use for HTML and HTML Help pages.  See the documentation for
-	# a list of builtin themes.
-	
-	html_theme = 'sphinx_rtd_theme'
-
-	# Add any paths that contain custom static files (such as style sheets) here,
-	# relative to this directory. They are copied after the builtin static files,
-	# so a file named "default.css" will overwrite the builtin "default.css".
-	html_static_path = ['_static']
+# Add any paths that contain custom static files (such as style sheets) here,
+# relative to this directory. They are copied after the builtin static files,
+# so a file named "default.css" will overwrite the builtin "default.css".
+html_static_path = ['_static']
