@@ -1,13 +1,15 @@
 import dearpygui.dearpygui as dpg
 import dearpygui_extend as dpge
+from pathlib import Path
 
 dpg.create_context()
 
 # load example images
+images_folder = Path(__file__).parent.parent / '_assets'
 images = ['sphere','cube','tube','torus','cone']
 with dpg.texture_registry():
 	for image in images:
-		width, height, channels, data = dpg.load_image(f'../_assets/{image}.png')
+		width, height, channels, data = dpg.load_image(f'{images_folder}/{image}.png')
 		dpg.add_static_texture(width=width, height=height, default_value=data, tag=image)
 
 # validate user has selected all 3 cards

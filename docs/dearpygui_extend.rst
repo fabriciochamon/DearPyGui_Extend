@@ -4,6 +4,13 @@ dearpygui\_extend package
 Submodules
 ----------
 
+dearpygui\_extend.file\_browser module
+--------------------------------------
+
+.. automodule:: dearpygui_extend.file_browser
+   :members:
+   :show-inheritance:
+
 dearpygui\_extend.movable\_group module
 ---------------------------------------
 
