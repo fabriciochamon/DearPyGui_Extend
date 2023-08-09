@@ -1,6 +1,9 @@
 # DearPyGui_Extend
 Extensions and custom widgets for [Dear Py GUI](http://github.com/hoffstadt/DearPyGui)
 
+API Documentation: 
+[dearpygui-extend.readthedocs.io](dearpygui-extend.readthedocs.io) [![Documentation Status](https://readthedocs.org/projects/dearpygui-extend/badge/?version=latest)](https://dearpygui-extend.readthedocs.io/en/latest/?badge=latest) 
+
 ## Movable Groups
 Add Drag'n'drop ability to groups ("swap" or "replace" behaviors):
 
