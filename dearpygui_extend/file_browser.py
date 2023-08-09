@@ -52,15 +52,18 @@ class FileBrowser:
 		show_as_window=False,
 		modal_window=False,
 		show_ok_cancel=False,
+		show_nav_icons=True,
 		callback=None,
+		selection_callback=None,
 	):
 
 		fb_parent = dpg.last_container() if parent is None else parent
-		default_path = pathlib.Path(default_path).expanduser()
+		default_path = pathlib.Path(default_path).expanduser().resolve() if default_path is not None else pathlib.Path('~').expanduser()
 		tag_prefix = 'dpge_filebrowser' # all file browser item tags will have this prefix, so they don't clash with other tags in your code
 		fb_payload_type = self.PAYLOAD_TYPE # payload name for pairing with drop callbacks on other elements of the UI
 		col_widths = (0.6, 0.15, 0.25) # normalized width distribution for "name" | "size" | "date modified" columns
 		filetype_filter = filetype_filter or self.FILETYPE_FILTER_DEFAULT
+		self.popups_created=[]
 
 		# built-in icons 
 		# -- FILE -- #
@@ -139,12 +142,13 @@ class FileBrowser:
 		_fb_breadcrumb_curpath = default_path
 		_fb_prevpath = default_path
 		_fb_new_folder_popup = None
-		
+
 		# utility to display a simple info box (errors, etc)
 		def _fb_show_info_box(content='', label='Filebrowser Error'):
 			with dpg.mutex():
 				viewport_width = dpg.get_viewport_client_width()
 				viewport_height = dpg.get_viewport_client_height()
+			
 			with dpg.window(label=label) as infobox:
 				dpg.add_text(content)
 				dpg.add_button(label="Ok", width=75, callback=lambda x: dpg.delete_item(infobox))
@@ -199,6 +203,7 @@ class FileBrowser:
 
 			_fb_last_selected = sender
 
+
 		# set current folder on double click
 		def _fb_set_path_from_clicked_folder(sender, app_data, user_data):
 			path = pathlib.Path(dpg.get_value(f'{tag_prefix}_path')).expanduser()
@@ -216,6 +221,25 @@ class FileBrowser:
 				path = path/sel_item
 				dpg.set_value(f'{tag_prefix}_path', path.resolve())
 				_fb_populate_files()
+			else:
+				if callback:
+					# get files
+					files = []
+					if expand_sequences_on_callback and data['is_sequence']:
+						files.extend([x for x in data['sequence']])
+					else:
+						files.append(data['path'])
+					
+					if callback.__code__.co_argcount==0: callback()
+					if callback.__code__.co_argcount==1: callback(sender)
+					if callback.__code__.co_argcount==2: callback(sender, files)
+					if callback.__code__.co_argcount==3: callback(sender, files, False)
+
+					if show_as_window: 
+						dpg.configure_item(f'{tag_prefix}_window', show=False)
+						#clear selection 
+						dpg.set_value(sender, False)
+						dpg.bind_item_theme(sender, _fb_item_unselected)
 
 		# rebuilds payload drag_data to match current selection
 		last_click_time=time.time()
@@ -225,6 +249,7 @@ class FileBrowser:
 			nonlocal _fb_item_selected
 			nonlocal _fb_last_selected
 			nonlocal allow_drag
+			nonlocal selection_callback
 			item_clicked = app_data[1]
 
 			# workaround for binding both "click" AND "double-click" item handlers. 
@@ -269,6 +294,12 @@ class FileBrowser:
 				if allow_drag:
 					for item in selectables:
 						dpg.configure_item(f'{tag_prefix}_drag_payload_{item}', drag_data=files)
+
+				if selection_callback:
+					if selection_callback.__code__.co_argcount==0: selection_callback()
+					if selection_callback.__code__.co_argcount==1: selection_callback(sender)
+					if selection_callback.__code__.co_argcount==2: selection_callback(sender, files)
+
 
 		# formatter for "date modified" column
 		def _dateFormatter(date):
@@ -361,7 +392,9 @@ class FileBrowser:
 
 				bctag = f'{tag_prefix}_breadcrumb_row'
 				dpg.delete_item(bctag, children_only=True)
-				if _fb_new_folder_popup: dpg.delete_item(_fb_new_folder_popup)
+				#if _fb_new_folder_popup: dpg.delete_item(_fb_new_folder_popup)
+				for pc in self.popups_created:
+					if dpg.does_item_exist(pc): dpg.delete_item(pc)
 
 				# only rebuilds if row visible (i.e.: user not editing path manually)
 				isVisible = dpg.get_item_configuration(bctag)['show']==True
@@ -369,31 +402,33 @@ class FileBrowser:
 				if isVisible:
 					with dpg.group(parent=bctag, horizontal=True):
 							
-						# go back
-						dpg.add_button(arrow=True, direction=internal_dpg.mvDir_Left, callback=_fb_move_back)
-						with dpg.tooltip(parent=dpg.last_item()):
-							dpg.add_text('Go Back')
-						
-						# go up
-						dpg.add_button(arrow=True, direction=internal_dpg.mvDir_Up, callback=_fb_move_up)
-						with dpg.tooltip(parent=dpg.last_item()):
-							dpg.add_text('Go Up')
-						
-						# add new folder
-						dpg.add_image_button(icon_tag_addfolder, width=14*icon_size, height=14*icon_size, tag=f'{tag_prefix}_add_folder_btn', show=allow_create_new_folder)
-						with dpg.tooltip(parent=dpg.last_item()):
-							dpg.add_text('Create new folder')
-						with dpg.popup(parent=f'{tag_prefix}_add_folder_btn', no_move=True, mousebutton=internal_dpg.mvMouseButton_Left, min_size=(280,40), max_size=(280,40)) as _fb_new_folder_popup:
-							with dpg.group(horizontal=True):
-								dpg.add_text('Name')
-								dpg.add_input_text(tag=f'{tag_prefix}_new_folder_name', width=150, callback=_fb_add_folder, on_enter=True)
-								dpg.add_button(label=' create ', small=True, callback=_fb_add_folder)
-						dpg.bind_item_theme(_fb_new_folder_popup, _fb_popup_border)
+						if show_nav_icons:
+							# go back
+							dpg.add_button(arrow=True, direction=internal_dpg.mvDir_Left, callback=_fb_move_back)
+							with dpg.tooltip(parent=dpg.last_item()):
+								dpg.add_text('Go Back')
+							
+							# go up
+							dpg.add_button(arrow=True, direction=internal_dpg.mvDir_Up, callback=_fb_move_up)
+							with dpg.tooltip(parent=dpg.last_item()):
+								dpg.add_text('Go Up')
+							
+							# add new folder
+							dpg.add_image_button(icon_tag_addfolder, width=14*icon_size, height=14*icon_size, tag=f'{tag_prefix}_add_folder_btn', show=allow_create_new_folder)
+							with dpg.tooltip(parent=dpg.last_item()):
+								dpg.add_text('Create new folder')
+							with dpg.popup(parent=f'{tag_prefix}_add_folder_btn', no_move=True, mousebutton=internal_dpg.mvMouseButton_Left, min_size=(280,40), max_size=(280,40)) as _fb_new_folder_popup:
+								self.popups_created.append(_fb_new_folder_popup)
+								with dpg.group(horizontal=True):
+									dpg.add_text('Name')
+									dpg.add_input_text(tag=f'{tag_prefix}_new_folder_name', width=150, callback=_fb_add_folder, on_enter=True)
+									dpg.add_button(label=' create ', small=True, callback=_fb_add_folder)
+							dpg.bind_item_theme(_fb_new_folder_popup, _fb_popup_border)
 
-						# user home folder
-						dpg.add_image_button(icon_tag_home, width=14*icon_size, height=14*icon_size, callback=_fb_goto_home)
-						with dpg.tooltip(parent=dpg.last_item()):
-							dpg.add_text('User home')
+							# user home folder
+							dpg.add_image_button(icon_tag_home, width=14*icon_size, height=14*icon_size, callback=_fb_goto_home)
+							with dpg.tooltip(parent=dpg.last_item()):
+								dpg.add_text('User home')
 														
 						path = dpg.get_value(f'{tag_prefix}_path')
 						path_parts = pathlib.PurePath(path).parts
@@ -415,7 +450,8 @@ class FileBrowser:
 
 									if i<len(path_parts)-1:
 										folder_sep = dpg.add_button(label=os.sep, user_data=folders,  small=True)
-										with dpg.popup(dpg.last_item(), mousebutton=dpg.mvMouseButton_Left):
+										with dpg.popup(dpg.last_item(), mousebutton=dpg.mvMouseButton_Left) as path_path_popup:
+											self.popups_created.append(path_path_popup)
 											for folder in folders:
 												dest_path = folder['path']
 												with dpg.group(horizontal=True):
@@ -772,11 +808,14 @@ class FileBrowser:
 				fb_win_label = label if label not in fb_icons_lst else f'Choose {fb_icons_sfx[fb_icons_lst.index(label)]}'
 
 			if fb_btn_label in fb_icons_lst:
-				dpg.add_image_button(texture_tag=fb_btn_label, width=16*icon_size, height=16*icon_size, callback=lambda x: dpg.configure_item(f'{tag_prefix}_window', show=True, pos=(dpg.get_mouse_pos()[0]+50, dpg.get_mouse_pos()[1]+80)))
+				try: dpg.add_image_button(texture_tag=fb_btn_label, width=16*icon_size, height=16*icon_size, callback=lambda x: dpg.configure_item(f'{tag_prefix}_window', show=True, pos=(dpg.get_mouse_pos()[0]+50, dpg.get_mouse_pos()[1]+80)))
+				except: dpg.add_image_button(parent=parent, texture_tag=fb_btn_label, width=16*icon_size, height=16*icon_size, callback=lambda x: dpg.configure_item(f'{tag_prefix}_window', show=True, pos=(dpg.get_mouse_pos()[0]+50, dpg.get_mouse_pos()[1]+80)))
 				with dpg.tooltip(parent=dpg.last_item()):
 					dpg.add_text(fb_win_label)
 			else:
-				dpg.add_button(label=fb_btn_label, callback=lambda x: dpg.configure_item(f'{tag_prefix}_window', show=True, pos=(dpg.get_mouse_pos()[0]+50, dpg.get_mouse_pos()[1]+80)))
+				try: dpg.add_button(label=fb_btn_label, callback=lambda x: dpg.configure_item(f'{tag_prefix}_window', show=True, pos=(dpg.get_mouse_pos()[0]+50, dpg.get_mouse_pos()[1]+80)))
+				except: dpg.add_button(parent=parent, label=fb_btn_label, callback=lambda x: dpg.configure_item(f'{tag_prefix}_window', show=True, pos=(dpg.get_mouse_pos()[0]+50, dpg.get_mouse_pos()[1]+80)))
+
 			fb_parent = dpg.add_window(tag=f'{tag_prefix}_window', label=fb_win_label, show=False, modal=modal_window, width=width, height=height)
 
 		# UI layout table
@@ -797,34 +836,36 @@ class FileBrowser:
 				with dpg.group(horizontal=True):
 
 					if path_input_style==self.PATH_INPUT_STYLE_TEXT_ONLY:
-						# go back
-						dpg.add_button(arrow=True, direction=internal_dpg.mvDir_Left, callback=_fb_move_back)
-						with dpg.tooltip(parent=dpg.last_item()):
-							dpg.add_text('Go Back')
-						
-						# go up
-						dpg.add_button(arrow=True, direction=internal_dpg.mvDir_Up, callback=_fb_move_up)
-						with dpg.tooltip(parent=dpg.last_item()):
-							dpg.add_text('Go Up')
-						
-						# add new folder
-						dpg.add_image_button(icon_tag_addfolder, width=14*icon_size, height=14*icon_size, tag=f'{tag_prefix}_add_folder_btn', show=allow_create_new_folder)
-						with dpg.tooltip(parent=dpg.last_item()):
-							dpg.add_text('Create new folder')
-						with dpg.popup(parent=f'{tag_prefix}_add_folder_btn', no_move=True, mousebutton=internal_dpg.mvMouseButton_Left, min_size=(280,40), max_size=(280,40)) as _fb_new_folder_popup:
-							with dpg.group(horizontal=True):
-								dpg.add_text('Name')
-								dpg.add_input_text(tag=f'{tag_prefix}_new_folder_name', width=150, callback=_fb_add_folder, on_enter=True)
-								dpg.add_button(label=' create ', small=True, callback=_fb_add_folder)
-						dpg.bind_item_theme(_fb_new_folder_popup, _fb_popup_border)
+						if show_nav_icons:
+							# go back
+							dpg.add_button(arrow=True, direction=internal_dpg.mvDir_Left, callback=_fb_move_back)
+							with dpg.tooltip(parent=dpg.last_item()):
+								dpg.add_text('Go Back')
+							
+							# go up
+							dpg.add_button(arrow=True, direction=internal_dpg.mvDir_Up, callback=_fb_move_up)
+							with dpg.tooltip(parent=dpg.last_item()):
+								dpg.add_text('Go Up')
+							
+							# add new folder
+							dpg.add_image_button(icon_tag_addfolder, width=14*icon_size, height=14*icon_size, tag=f'{tag_prefix}_add_folder_btn', show=allow_create_new_folder)
+							with dpg.tooltip(parent=dpg.last_item()):
+								dpg.add_text('Create new folder')
+							with dpg.popup(parent=f'{tag_prefix}_add_folder_btn', no_move=True, mousebutton=internal_dpg.mvMouseButton_Left, min_size=(280,40), max_size=(280,40)) as _fb_new_folder_popup:
+								self.popups_created.append(_fb_new_folder_popup)
+								with dpg.group(horizontal=True):
+									dpg.add_text('Name')
+									dpg.add_input_text(tag=f'{tag_prefix}_new_folder_name', width=150, callback=_fb_add_folder, on_enter=True)
+									dpg.add_button(label=' create ', small=True, callback=_fb_add_folder)
+							dpg.bind_item_theme(_fb_new_folder_popup, _fb_popup_border)
 
-						# user home folder
-						dpg.add_image_button(icon_tag_home, width=14*icon_size, height=14*icon_size, callback=_fb_goto_home)
-						with dpg.tooltip(parent=dpg.last_item()):
-							dpg.add_text('User home')
+							# user home folder
+							dpg.add_image_button(icon_tag_home, width=14*icon_size, height=14*icon_size, callback=_fb_goto_home)
+							with dpg.tooltip(parent=dpg.last_item()):
+								dpg.add_text('User home')
 
 					# input path
-					dpg.add_text('Folder')
+					#dpg.add_text('Folder')
 					dpg.add_input_text(tag=f'{tag_prefix}_path', default_value=default_path, callback=_fb_populate_files, width=-1, on_enter=True)
 					
 			# current folder path (as breadcrumb)
@@ -905,6 +946,7 @@ class FileBrowser:
 			# this is replacing the regular item callback because that callback always triggers AFTER the drag event, making it impossible for us to define drag_data dynamically.
 			with dpg.item_handler_registry(tag=f'{tag_prefix}_file_click_handler'):
 				dpg.add_item_clicked_handler(callback=_fb_file_click, button=internal_dpg.mvMouseButton_Left)
+
 
 		# init UI data
 		_fb_built_filetype_filter()

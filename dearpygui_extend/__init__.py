@@ -56,7 +56,9 @@ def add_file_browser(**kwargs):
 	:param bool show_as_window: The filebrowser can be displayed inline or as a separate window. If "show_as_window==True" only a button widget is displayed inline, and the full filebrowser window is shown when user clicks the button. (See "label" for more info)
 	:param bool modal_window: Create a modal window if "show_as_window"==True ? (IMPORTANT: currently there is a bug where the "allow_create_new_folder" popup will not display on a modal window!)
 	:param bool show_ok_cancel: Display action buttons at the bottom. Result of "callback" happens when user clicks these buttons. (Alternatively, leave this option off and work with draggable items using "allow_drag" and drop_callbacks instead)
+	:param bool show_nav_icons: Display top navigation icons ("<", "^", "create folder", "home"). They can take considerable UI space depending on parent container size, so disabling this might help vizualize more of the current path being browsed.
 	:param callable callback: Callback executed when OK/Cancel buttons are pressed (if "show_ok_cancel==True"). Args "sender"(int), "files"(list) and "cancel_pressed"(bool) are available.
+	:param callable selection_callback: Callback executed when user selects files/folders inside the browser. Args "sender"(int), "files"(list) are available.
 
 	:returns: A dearpygui item id
 	"""
