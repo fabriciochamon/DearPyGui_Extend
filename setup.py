@@ -2,9 +2,13 @@ from setuptools import setup, find_packages
 
 setup(
     name="dearpygui_extend",
-    version="0.1",
+    version="0.1.1",
     packages=['dearpygui_extend'],
-    install_requires=open("requirements.txt").readlines(),
+    install_requires=[
+        'dearpygui==1.9.1',
+        'Fileseq==1.15.2',
+        'future==0.18.3',
+    ],
     entry_points={
         "console_scripts": [
             # If your project has command-line scripts, add their entry points here, e.g.
