@@ -78,6 +78,7 @@ Usage:
 import dearpygui.dearpygui as dpg
 import dearpygui_extend as dpge
 
+# use "tab" for identation
 layout='''
 LAYOUT example center center
 	COL left_menu 0.2
