@@ -3,6 +3,9 @@ Extensions and custom widgets for [Dear Py GUI](http://github.com/hoffstadt/Dear
 
 API Documentation: [![Documentation Status](https://readthedocs.org/projects/dearpygui-extend/badge/?version=latest)](https://dearpygui-extend.readthedocs.io/en/latest/?badge=latest) 
 
+**Also check "examples" folder.
+
+</br>
 ## Movable Groups
 Add Drag'n'drop ability to groups ("swap" or "replace" behaviors):
 
@@ -43,11 +46,7 @@ Usage:
 import dearpygui.dearpygui as dpg
 import dearpygui_extend as dpge
 
-dpge.add_file_browser(
-	initial_path='~/Downloads/images',
-	collapse_sequences=True,
-	sequence_padding='#'
-):
+dpge.add_file_browser(initial_path='~/Downloads/images', collapse_sequences=True, sequence_padding='#')
 ```
 </br>
 
