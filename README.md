@@ -1,6 +1,8 @@
 # DearPyGui_Extend
 Extensions and custom widgets for [Dear Py GUI](http://github.com/hoffstadt/DearPyGui)
 
+Installation: `pip install dearpygui-extend`
+
 API Documentation: [![Documentation Status](https://readthedocs.org/projects/dearpygui-extend/badge/?version=latest)](https://dearpygui-extend.readthedocs.io/en/latest/?badge=latest) 
 
 **Also check "examples" folder.
