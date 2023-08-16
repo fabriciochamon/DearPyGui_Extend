@@ -6,6 +6,7 @@ API Documentation: [![Documentation Status](https://readthedocs.org/projects/dea
 **Also check "examples" folder.
 
 </br>
+
 ## Movable Groups
 Add Drag'n'drop ability to groups ("swap" or "replace" behaviors):
 
