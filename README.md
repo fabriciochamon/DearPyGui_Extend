@@ -18,47 +18,85 @@ with dpge.movable_group():
 	...
 ```
 
-or
-```py
-import dearpygui.dearpygui as dpg
-import dearpygui_extend as dpge
-
-win = dpg.add_window(tag='window1')
-mg = dpge.add_movable_group(parent=win)
-text = dpg.add_text('Some text', parent=mg)
-```
-
 </br>
 
-## Extended file browser
+## File browser
+A custom filebrowser with extended functionality.
+
 Features:
 
-* Supports **file sequence** (collapsed) entries:
+* Supports **file sequence** entries:
 	`image.001.jpg, image.002.jpg, image.003.jpg --> 'image.###.jpg (001-003)'`
 * Multi-selection (pick single or multiple files/sequences)
-* Click Breadcrumb path for folder quick access, double click to manually edit path
-* File filters: by name, type
-* Sorting (smart size and date for collapsed sequences)
-* Draggable files (ability to expand sequences on a drop callback)
+* Breadcrumb path with navigation icons & folder quick access
+* Filetype filters
+* Sorting (smart sorting for collapsed sequences)
+* Draggable items (ability to expand file sequences on a drop callback)
 
 > [!NOTE]
 > Requires [Fileseq](https://pypi.org/project/Fileseq/) package: `pip install fileseq`
 
 ![](./resources/fileseq_browser.gif)
+
 Usage:
 ```py
-from dearpygui_extend.file_browser import FileBrowser
+import dearpygui.dearpygui as dpg
+import dearpygui_extend as dpge
 
-filetype_filers = [
-	{ 'label': 'All files', 'formats': ['*'] },
-	{ 'label': 'Images', 'formats': ['jpg', 'png', 'gif'] },
-]
-FileBrowser(
+dpge.add_file_browser(
 	initial_path='~/Downloads/images',
 	collapse_sequences=True,
-	collapse_padding_str='#',
-	show_hidden_files=False,
-	filetype_filers=filetype_filers,
-	path_input_style=FileBrowser.BREADCRUMB,
+	sequence_padding='#'
 ):
 ```
+</br>
+
+## Layout
+A simple, responsive, text-based layouting system that abstracts table creation process away from the user. 
+
+Example:
+```
+LAYOUT example center center
+	COL left_menu 0.2
+	COL
+		ROW 0.3
+			COL left_content
+			COL right_content
+		ROW
+			COL bottom_content
+	COL right_menu 0.2
+```
+will produce this layout:
+![](./resources/layout.png)
+
+Usage:
+```py
+import dearpygui.dearpygui as dpg
+import dearpygui_extend as dpge
+
+layout='''
+LAYOUT example center center
+	COL left_menu 0.2
+	COL
+		ROW 0.3
+			COL left_content
+			COL right_content
+		ROW
+			COL bottom_content
+	COL right_menu 0.2
+'''
+# create layout
+with dpg.window():
+	dpge.add_layout(layout, border=True)
+
+# accessing layout panes
+with dpg.group(parent='left_content'):
+
+	#add widgets
+	dpg.add_text('User login:')
+	dpg.add_input_text(label='username')
+	dpg.add_input_text(label='password')
+	dpg.add_button(label='Login')
+	
+```
+![](./resources/layout_with_content.png)

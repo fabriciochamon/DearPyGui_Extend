@@ -26,7 +26,6 @@ LAYOUT dashboard center center
 with dpg.window(tag='main_window'):
 	dpge.add_layout(layout, debug=True)
 
-
 dpg.create_viewport()
 dpg.set_primary_window('main_window', True)
 dpg.setup_dearpygui()
