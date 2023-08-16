@@ -11,6 +11,14 @@ dearpygui\_extend.file\_browser module
    :members:
    :show-inheritance:
 
+dearpygui\_extend.layout module
+-------------------------------
+
+.. automodule:: dearpygui_extend.layout
+   :members:
+   :show-inheritance:
+.. image:: layout.png
+
 dearpygui\_extend.movable\_group module
 ---------------------------------------
 

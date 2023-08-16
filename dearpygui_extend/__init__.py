@@ -1,5 +1,6 @@
 from .movable_group import MovableGroup
 from .file_browser import FileBrowser
+from .layout import Layout 
 
 class movable_group(MovableGroup):
 	pass
@@ -60,6 +61,41 @@ def add_file_browser(**kwargs):
 	:param callable callback: Callback executed when OK/Cancel buttons are pressed (if "show_ok_cancel==True"). Args "sender"(int), "files"(list) and "cancel_pressed"(bool) are available.
 	:param callable selection_callback: Callback executed when user selects files/folders inside the browser. Args "sender"(int), "files"(list) are available.
 
-	:returns: A dearpygui item id
+	:returns: A FileBrowser object. You can access the "root" class attribute to refer to the top most dpg item of the FileBrowser.
 	"""
 	return FileBrowser(**kwargs)
+
+
+class layout(Layout):
+	pass
+
+def add_layout(layout, **kwargs):
+	"""
+	A window layouting system based on a simple human readable format.
+
+	:param str layout: A string containing the layout. Uses tab based identation syntax (More info below).
+	:param int parent: The layout parent item.
+	:param bool border: Displays a border around panes.
+	:param bool resizable: Allow pane columns to be resized.
+	:param bool debug: Displays random colors as indication for each pane.
+
+	:returns: A Layout object. You can access the "root" class attribute to refer to the top most dpg item of the layout.
+
+	LAYOUT - the top most item (required as the first line). Accepts 3 positional parameters: 
+		- name: the main layout table tag
+		- halign: horizontal alignment mode  (left | center | right)
+		- valign: vertical alignment mode    (top  | center | bottom)
+		
+		*If defined, global layout alignment options will be used for all columns. (Any column can override this value with its own alignment parms).
+	
+	ROW - a row item. Accepts 1 positional parameter: 
+		- size: row height as a normalized 0-1 value. (If omitted, remaining height will be automatically distributed between all the rows without this parm)
+	
+	COL - a column item. Accepts 4 positional parameters: 
+		- name: the dpg container tag, that you can access later to put the child widgets on.
+		- size: the column width as a normalized 0-1 value. (If omitted, remaining width will be automatically distributed between all the columns without this parm)
+		- halign: horizontal alignment mode  (left | center | right)
+		- valign: vertical alignment mode    (top  | center | bottom)
+
+	"""
+	return Layout(layout, **kwargs)

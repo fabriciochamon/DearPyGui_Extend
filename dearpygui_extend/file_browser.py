@@ -829,6 +829,8 @@ class FileBrowser:
 			width=width*0.97,
 			):
 
+			self.root = f'{tag_prefix}_layout_table'
+			
 			dpg.add_table_column()
 
 			# current folder path (as text)

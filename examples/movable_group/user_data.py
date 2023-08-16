@@ -13,7 +13,7 @@ def show_user_data(sender, app_data, user_data):
 
 with dpg.window(width=400, height=600):
 
-	dpg.add_text('Because MovableGroups() take over the "user_data" arg for internal manipulations, you\'ll need to access your own user_data in an extra level. Click button to see and example:', wrap=380)
+	dpg.add_text('Because MovableGroups() take over the "user_data" arg for internal manipulations, you\'ll need to access your own user_data in an extra ["user"] subkey. Click button to see and example:', wrap=380)
 	dpg.add_separator()
 
 	with dpge.movable_group('Group 1', user_data='This is the actual group user_data!') as group:
