@@ -61,14 +61,14 @@ A simple, responsive, text-based layouting system that abstracts table creation 
 Example:
 ```
 LAYOUT example center center
-    COL left_menu 0.2
-    COL
-        ROW 0.3
-            COL left_content
-            COL right_content
-        ROW
-            COL bottom_content
-    COL right_menu 0.2
+  COL left_menu 0.2
+  COL
+    ROW 0.3
+      COL left_content
+      COL right_content
+    ROW
+      COL bottom_content
+  COL right_menu 0.2
 ```
 will produce this layout:
 ![](./resources/layout.png)
