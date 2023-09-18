@@ -760,9 +760,10 @@ class FileBrowser:
 			nonlocal expand_sequences_on_callback
 			nonlocal tag_prefix
 			nonlocal _fb_item_selected
+			nonlocal dirs_only
 
 			cancel_pressed = user_data
-			files=['1123','ewrwe']
+			files=[]
 			if callback:
 				
 				# get files
@@ -784,6 +785,9 @@ class FileBrowser:
 						files.extend([x for x in data['sequence']])
 					else:
 						files.append(data['path'])
+
+				if dirs_only and not len(selection):
+					files.append(dpg.get_value(f'{tag_prefix}_path'))
 			
 				if callback.__code__.co_argcount==0: callback()
 				if callback.__code__.co_argcount==1: callback(sender)
