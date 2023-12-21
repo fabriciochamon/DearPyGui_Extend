@@ -32,6 +32,7 @@ class FileBrowser:
 		label='Choose file',
 		width=-1,
 		height=500,
+		pos=None,
 		parent=None,
 		default_path='~',
 		collapse_sequences=True,
@@ -764,12 +765,12 @@ class FileBrowser:
 
 			cancel_pressed = user_data
 			files=[]
+			selectables=[]
 			if callback:
 				
 				# get files
 				files=[]
 				selection=[]
-				selectables=[]
 				table = f'{tag_prefix}_main_table'
 				rows = dpg.get_item_children(table, 1)
 				for row in rows:
@@ -811,16 +812,18 @@ class FileBrowser:
 				fb_btn_label = label+' ...' if label not in fb_icons_lst else label
 				fb_win_label = label if label not in fb_icons_lst else f'Choose {fb_icons_sfx[fb_icons_lst.index(label)]}'
 
+			fb_win_pos = (dpg.get_mouse_pos()[0]+50, dpg.get_mouse_pos()[1]+80) if pos is None else pos
+
 			if fb_btn_label in fb_icons_lst:
-				try: dpg.add_image_button(texture_tag=fb_btn_label, width=16*icon_size, height=16*icon_size, callback=lambda x: dpg.configure_item(f'{tag_prefix}_window', show=True, pos=(dpg.get_mouse_pos()[0]+50, dpg.get_mouse_pos()[1]+80)))
-				except: dpg.add_image_button(parent=parent, texture_tag=fb_btn_label, width=16*icon_size, height=16*icon_size, callback=lambda x: dpg.configure_item(f'{tag_prefix}_window', show=True, pos=(dpg.get_mouse_pos()[0]+50, dpg.get_mouse_pos()[1]+80)))
+				try: dpg.add_image_button(texture_tag=fb_btn_label, width=16*icon_size, height=16*icon_size, callback=lambda x: dpg.configure_item(f'{tag_prefix}_window', show=True, pos=fb_win_pos))
+				except: dpg.add_image_button(parent=parent, texture_tag=fb_btn_label, width=16*icon_size, height=16*icon_size, callback=lambda x: dpg.configure_item(f'{tag_prefix}_window', show=True, pos=fb_win_pos))
 				with dpg.tooltip(parent=dpg.last_item()):
 					dpg.add_text(fb_win_label)
 			else:
-				try: dpg.add_button(label=fb_btn_label, callback=lambda x: dpg.configure_item(f'{tag_prefix}_window', show=True, pos=(dpg.get_mouse_pos()[0]+50, dpg.get_mouse_pos()[1]+80)))
-				except: dpg.add_button(parent=parent, label=fb_btn_label, callback=lambda x: dpg.configure_item(f'{tag_prefix}_window', show=True, pos=(dpg.get_mouse_pos()[0]+50, dpg.get_mouse_pos()[1]+80)))
+				try: dpg.add_button(label=fb_btn_label, callback=lambda x: dpg.configure_item(f'{tag_prefix}_window', show=True, pos=fb_win_pos))
+				except: dpg.add_button(parent=parent, label=fb_btn_label, callback=lambda x: dpg.configure_item(f'{tag_prefix}_window', show=True, pos=fb_win_pos))
 
-			fb_parent = dpg.add_window(tag=f'{tag_prefix}_window', label=fb_win_label, show=False, modal=modal_window, width=width, height=height)
+			fb_parent = dpg.add_window(tag=f'{tag_prefix}_window', label=fb_win_label, show=False, modal=modal_window, width=width, height=height, pos=fb_win_pos)
 
 		# UI layout table
 		with dpg.table(
