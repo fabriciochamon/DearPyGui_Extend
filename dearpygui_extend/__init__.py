@@ -38,6 +38,7 @@ def add_file_browser(**kwargs):
 	:param int width: Item width
 	:param int height: Item height
 	:param int parent: The filebrowser parent item
+	:param tuple pos: File browser window position as (width, height)
 	:param str default_path: Initial path (filebrowser will expand user home folder '~', if present)
 	:param bool collapse_sequences: Collapse numbered file sequences into a single entry.
 	:param bool collapse_sequences_checkbox: Displays the checkbox option to turn on/off display of collapsed sequences.
