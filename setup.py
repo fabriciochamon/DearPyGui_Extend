@@ -2,11 +2,11 @@ from setuptools import setup, find_packages
 
 setup(
     name="dearpygui_extend",
-    version="0.1.1",
+    version="0.1.4",
     packages=['dearpygui_extend'],
     install_requires=[
-        'dearpygui==1.9.1',
-        'Fileseq==1.15.2',
+        'dearpygui>=1.9.1',
+        'Fileseq>=1.15.2',
         'future==0.18.3',
     ],
     entry_points={
