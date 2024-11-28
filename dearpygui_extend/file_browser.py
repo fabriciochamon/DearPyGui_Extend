@@ -29,6 +29,7 @@ class FileBrowser:
 
 	def __init__(
 		self,
+		tag=None,
 		label='Choose file',
 		width=-1,
 		height=500,
@@ -56,15 +57,19 @@ class FileBrowser:
 		show_nav_icons=True,
 		callback=None,
 		selection_callback=None,
+		user_data=None,
 	):
 
-		fb_parent = dpg.last_container() if parent is None else parent
+		fb_parent = dpg.get_active_window() if parent is None else parent
 		default_path = pathlib.Path(default_path).expanduser().resolve() if default_path is not None else pathlib.Path('~').expanduser()
-		tag_prefix = 'dpge_filebrowser' # all file browser item tags will have this prefix, so they don't clash with other tags in your code
+		tag_prefix = tag or 'dpge_filebrowser_' + str(dpg.generate_uuid())
+		self.tag = tag_prefix
 		fb_payload_type = self.PAYLOAD_TYPE # payload name for pairing with drop callbacks on other elements of the UI
 		col_widths = (0.6, 0.15, 0.25) # normalized width distribution for "name" | "size" | "date modified" columns
 		filetype_filter = filetype_filter or self.FILETYPE_FILTER_DEFAULT
 		self.popups_created=[]
+		self.user_data=user_data
+		self.btn_open_fb = None
 
 		# built-in icons 
 		# -- FILE -- #
@@ -86,30 +91,30 @@ class FileBrowser:
 		icon_data_home       = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 31, 31, 31, 255, 18, 18, 18, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 18, 18, 11, 18, 18, 18, 255, 255, 255, 255, 255, 255, 255, 255, 255, 18, 18, 18, 255, 18, 18, 18, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 18, 18, 1, 18, 18, 18, 10, 18, 18, 18, 255, 255, 255, 255, 255, 18, 18, 18, 255, 18, 18, 18, 255, 255, 255, 255, 255, 18, 18, 18, 255, 18, 18, 18, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 18, 18, 1, 18, 18, 18, 10, 18, 18, 18, 255, 255, 255, 255, 255, 18, 18, 18, 255, 255, 255, 255, 255, 255, 255, 255, 255, 18, 18, 18, 255, 255, 255, 255, 255, 18, 18, 18, 255, 18, 18, 18, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 18, 18, 1, 18, 18, 18, 16, 18, 18, 18, 255, 255, 255, 255, 255, 18, 18, 18, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 18, 18, 18, 255, 255, 255, 255, 255, 18, 18, 18, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 18, 18, 3, 18, 18, 18, 255, 255, 255, 255, 255, 18, 18, 18, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 18, 18, 18, 255, 255, 255, 255, 255, 18, 18, 18, 255, 18, 18, 18, 1, 0, 0, 0, 0, 18, 18, 18, 3, 18, 18, 18, 255, 255, 255, 255, 255, 18, 18, 18, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 18, 18, 18, 255, 255, 255, 255, 255, 18, 18, 18, 255, 18, 18, 18, 5, 18, 18, 18, 255, 255, 255, 255, 255, 18, 18, 18, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 18, 18, 18, 255, 255, 255, 255, 255, 18, 18, 18, 255, 0, 0, 0, 0, 18, 18, 18, 255, 255, 255, 255, 255, 68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 18, 18, 18, 255, 0, 0, 0, 0, 0, 0, 0, 0, 18, 18, 18, 255, 255, 255, 255, 255, 68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 18, 18, 18, 255, 0, 0, 0, 0, 0, 0, 0, 0, 18, 18, 18, 255, 255, 255, 255, 255, 68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255, 255, 255, 255, 255, 68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255, 255, 255, 255, 255, 18, 18, 18, 255, 0, 0, 0, 0, 0, 0, 0, 0, 18, 18, 18, 255, 255, 255, 255, 255, 68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255, 255, 255, 255, 255, 68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255, 255, 255, 255, 255, 18, 18, 18, 255, 0, 0, 0, 0, 0, 0, 0, 0, 18, 18, 18, 255, 255, 255, 255, 255, 68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255, 255, 255, 255, 255, 68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255, 255, 255, 255, 255, 18, 18, 18, 255, 0, 0, 0, 0, 0, 0, 0, 0, 18, 18, 18, 255, 255, 255, 255, 255, 68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255, 255, 255, 255, 255, 68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255, 255, 255, 255, 255, 18, 18, 18, 255, 0, 0, 0, 0, 0, 0, 0, 0, 18, 18, 18, 255, 255, 255, 255, 255, 68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 18, 18, 18, 255, 0, 0, 0, 0, 0, 0, 0, 0, 18, 18, 18, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 18, 18, 18, 255, 0, 0, 0, 0]
 		icon_data_home       = [float(x)/255 for x in icon_data_home]
 		icon_res_home        = (16,16)
-		icon_tag_home        = f'{tag_prefix}_icon_home'
+		icon_tag_home        = f'dpge_filebrowser_icon_home'
 		# -- SYMLINK -- #
 		icon_data_link       = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 177, 159, 87, 17, 236, 213, 118, 129, 236, 213, 118, 129, 236, 213, 118, 129, 234, 211, 117, 118, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 214, 193, 109, 64, 219, 198, 116, 156, 248, 224, 128, 255, 248, 224, 128, 255, 248, 224, 128, 255, 245, 221, 126, 250, 216, 195, 114, 137, 215, 195, 114, 138, 215, 195, 114, 138, 216, 195, 114, 137, 217, 196, 116, 136, 218, 197, 116, 136, 219, 198, 117, 135, 223, 202, 118, 134, 0, 0, 0, 0, 0, 0, 0, 0, 206, 194, 154, 134, 243, 241, 236, 255, 235, 233, 228, 255, 228, 226, 219, 255, 226, 224, 219, 255, 225, 223, 218, 255, 223, 221, 217, 255, 223, 221, 218, 255, 223, 222, 218, 255, 224, 222, 219, 255, 227, 226, 222, 255, 229, 227, 224, 255, 230, 229, 225, 255, 229, 225, 213, 255, 0, 0, 0, 9, 0, 0, 0, 4, 204, 193, 160, 135, 252, 252, 252, 255, 248, 224, 133, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 254, 229, 127, 253, 219, 197, 109, 63, 203, 193, 160, 135, 252, 252, 251, 255, 255, 230, 127, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 42, 79, 169, 255, 42, 79, 169, 255, 42, 79, 169, 255, 42, 79, 169, 255, 42, 79, 169, 255, 42, 79, 169, 255, 42, 79, 169, 255, 42, 79, 169, 255, 188, 169, 93, 25, 203, 193, 160, 135, 251, 250, 250, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 42, 79, 169, 255, 42, 79, 169, 255, 113, 127, 184, 255, 238, 239, 241, 255, 244, 244, 245, 255, 243, 243, 244, 255, 243, 243, 244, 255, 42, 79, 169, 255, 0, 0, 0, 3, 203, 193, 160, 135, 240, 239, 238, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 42, 79, 169, 255, 42, 79, 169, 255, 43, 80, 170, 255, 42, 79, 169, 255, 243, 243, 244, 255, 245, 245, 245, 255, 241, 241, 243, 255, 42, 79, 169, 255, 0, 0, 0, 0, 204, 193, 160, 135, 232, 226, 208, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 42, 79, 169, 255, 42, 79, 169, 255, 42, 79, 169, 255, 243, 243, 244, 255, 243, 243, 244, 255, 77, 100, 175, 255, 243, 243, 244, 255, 42, 79, 169, 255, 0, 0, 0, 0, 184, 171, 126, 135, 243, 222, 138, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 42, 79, 169, 255, 42, 79, 169, 255, 236, 237, 240, 255, 244, 244, 245, 255, 44, 80, 170, 255, 42, 79, 169, 255, 116, 130, 185, 255, 42, 79, 169, 255, 0, 0, 0, 0, 190, 171, 96, 136, 253, 228, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 42, 79, 169, 255, 236, 237, 240, 255, 243, 243, 244, 255, 42, 79, 169, 255, 42, 79, 169, 255, 42, 79, 169, 255, 42, 79, 169, 255, 42, 79, 169, 152, 0, 0, 0, 0, 196, 176, 97, 75, 220, 198, 110, 154, 219, 197, 109, 154, 219, 197, 109, 154, 219, 197, 109, 154, 219, 197, 109, 154, 219, 197, 109, 154, 159, 150, 145, 195, 139, 135, 152, 208, 159, 150, 145, 195, 159, 150, 145, 195, 159, 150, 145, 195, 159, 150, 145, 195, 160, 151, 145, 194, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 		icon_data_link       = [float(x)/255 for x in icon_data_link]
 		icon_res_link        = (16,16)
-		icon_tag_link        = f'{tag_prefix}_icon_link'
+		icon_tag_link        = f'dpge_filebrowser_icon_link'
 		# -- ADD FOLDER -- #
 		icon_data_addfolder  = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 28, 133, 68, 22, 28, 133, 68, 22, 28, 133, 68, 143, 28, 133, 68, 221, 28, 133, 68, 255, 28, 133, 68, 218, 28, 133, 68, 223, 28, 133, 68, 134, 28, 133, 68, 22, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 28, 133, 68, 22, 28, 133, 68, 175, 28, 133, 68, 175, 72, 142, 92, 255, 217, 219, 217, 255, 222, 223, 222, 255, 220, 220, 220, 255, 67, 141, 89, 255, 28, 133, 68, 255, 28, 133, 68, 174, 28, 133, 68, 22, 0, 0, 0, 0, 177, 159, 87, 17, 236, 213, 118, 129, 236, 213, 118, 129, 236, 213, 118, 129, 216, 200, 111, 130, 28, 133, 68, 175, 28, 133, 68, 205, 77, 144, 96, 255, 215, 217, 215, 255, 222, 222, 222, 255, 223, 223, 223, 255, 67, 141, 89, 255, 28, 133, 68, 255, 28, 133, 68, 174, 28, 133, 68, 22, 214, 193, 109, 64, 219, 198, 116, 156, 248, 224, 128, 255, 248, 224, 128, 255, 248, 224, 128, 255, 176, 181, 100, 253, 28, 133, 68, 255, 28, 133, 68, 255, 62, 139, 85, 255, 201, 208, 202, 255, 223, 223, 223, 255, 222, 222, 222, 255, 60, 138, 83, 255, 28, 133, 68, 255, 28, 133, 68, 255, 28, 133, 68, 173, 206, 194, 154, 134, 243, 241, 236, 255, 235, 233, 228, 255, 228, 226, 219, 255, 226, 224, 219, 255, 97, 151, 108, 255, 217, 219, 217, 255, 221, 222, 222, 255, 221, 222, 221, 255, 222, 222, 222, 255, 224, 224, 224, 255, 222, 222, 222, 255, 220, 221, 220, 255, 222, 222, 222, 255, 219, 220, 219, 255, 28, 133, 68, 249, 204, 193, 160, 135, 252, 252, 252, 255, 248, 224, 133, 255, 255, 230, 128, 255, 255, 230, 128, 255, 28, 133, 68, 255, 222, 223, 222, 255, 223, 223, 223, 255, 223, 223, 223, 255, 223, 223, 223, 255, 223, 223, 223, 255, 223, 223, 223, 255, 223, 223, 223, 255, 223, 223, 223, 255, 223, 223, 223, 255, 28, 133, 68, 255, 203, 193, 160, 135, 252, 252, 251, 255, 255, 230, 127, 255, 255, 230, 128, 255, 255, 230, 128, 255, 110, 152, 80, 255, 217, 219, 217, 255, 221, 222, 221, 255, 222, 222, 222, 255, 222, 223, 222, 255, 223, 223, 223, 255, 222, 222, 222, 255, 222, 222, 222, 255, 222, 222, 222, 255, 221, 221, 221, 255, 38, 134, 69, 222, 203, 193, 160, 135, 251, 250, 250, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 110, 152, 80, 255, 69, 141, 90, 255, 53, 137, 80, 255, 89, 147, 105, 255, 220, 221, 220, 255, 224, 224, 224, 255, 222, 223, 222, 255, 60, 139, 84, 255, 41, 135, 74, 255, 62, 139, 85, 255, 28, 133, 68, 218, 203, 193, 160, 135, 240, 239, 238, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 184, 187, 102, 255, 28, 133, 68, 255, 28, 133, 68, 255, 71, 142, 91, 255, 221, 222, 221, 255, 222, 223, 222, 255, 222, 222, 222, 255, 51, 137, 79, 255, 28, 133, 68, 255, 28, 133, 68, 255, 28, 133, 68, 134, 204, 193, 160, 135, 232, 226, 208, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 245, 224, 124, 255, 155, 172, 92, 255, 144, 167, 89, 255, 120, 161, 129, 255, 219, 221, 219, 255, 222, 222, 222, 255, 221, 221, 221, 255, 56, 138, 82, 255, 28, 133, 68, 255, 86, 142, 74, 198, 28, 133, 68, 22, 184, 171, 126, 135, 243, 222, 138, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 245, 224, 124, 255, 245, 224, 124, 255, 184, 187, 102, 255, 110, 152, 80, 255, 28, 133, 68, 255, 110, 152, 80, 255, 110, 152, 80, 255, 184, 187, 102, 255, 61, 132, 68, 26, 0, 0, 0, 0, 200, 180, 101, 144, 254, 229, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 255, 230, 128, 255, 0, 0, 0, 0, 0, 0, 0, 0, 210, 189, 104, 88, 255, 230, 128, 253, 254, 229, 128, 252, 254, 229, 127, 249, 254, 229, 128, 252, 255, 230, 128, 253, 255, 230, 128, 254, 255, 230, 128, 255, 255, 230, 128, 254, 254, 229, 128, 252, 253, 229, 127, 247, 253, 229, 127, 247, 252, 227, 126, 241, 254, 229, 127, 248, 255, 230, 128, 17, 0, 0, 0, 0, 255, 230, 128, 37, 255, 230, 128, 251, 255, 230, 128, 248, 255, 230, 128, 253, 255, 230, 128, 254, 255, 230, 128, 253, 255, 230, 128, 253, 255, 230, 128, 253, 255, 230, 128, 249, 255, 230, 128, 246, 255, 230, 128, 249, 255, 230, 128, 246, 255, 230, 128, 251, 255, 230, 128, 252, 0, 0, 0, 0, 0, 0, 0, 0, 255, 230, 128, 37, 255, 230, 128, 152, 255, 230, 128, 152, 255, 230, 128, 152, 255, 230, 128, 152, 255, 230, 128, 152, 255, 230, 128, 152, 255, 230, 128, 152, 255, 230, 128, 152, 255, 230, 128, 152, 255, 230, 128, 152, 255, 230, 128, 152, 255, 230, 128, 152, 255, 230, 128, 152, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 230, 128, 14, 255, 230, 128, 14, 255, 230, 128, 9, 255, 230, 128, 11, 255, 230, 128, 15, 255, 230, 128, 15, 255, 230, 128, 15, 255, 230, 128, 15, 255, 230, 128, 15, 255, 230, 128, 15, 255, 230, 128, 23, 255, 230, 128, 13, 0, 0, 0, 0, 0, 0, 0, 0]
 		icon_data_addfolder  = [float(x)/255 for x in icon_data_addfolder]
 		icon_res_addfolder   = (16,16)
-		icon_tag_addfolder   = f'{tag_prefix}_icon_addfolder'
+		icon_tag_addfolder   = f'dpge_filebrowser_icon_addfolder'
 				
 		# init item registry (executes only once)
 		first_instance = not dpg.does_item_exist(icon_tag_file)
 		
-		_fb_item_selected    = f'{tag_prefix}_theme_item_selected'
-		_fb_item_unselected  = f'{tag_prefix}_theme_item_unselected'
-		_fb_searchbox_active = f'{tag_prefix}_theme_searchbox_active'
-		_fb_popup_border     = f'{tag_prefix}_theme_popup_border'
+		_fb_item_selected    = f'dpge_filebrowser_theme_item_selected'
+		_fb_item_unselected  = f'dpge_filebrowser_theme_item_unselected'
+		_fb_searchbox_active = f'dpge_filebrowser_theme_searchbox_active'
+		_fb_popup_border     = f'dpge_filebrowser_theme_popup_border'
 
 		if first_instance:
 			
 			# register textures
-			with dpg.texture_registry(label=f'{tag_prefix}_textures'):
+			with dpg.texture_registry(label=f'dpge_filebrowser_textures'):
 				dpg.add_static_texture(label='Filebrowser Icon - File',       width=icon_res_file[0],      height=icon_res_file[1],      default_value=icon_data_file,      tag=icon_tag_file)
 				dpg.add_static_texture(label='Filebrowser Icon - Folder',     width=icon_res_folder[0],    height=icon_res_folder[1],    default_value=icon_data_folder,    tag=icon_tag_folder)
 				dpg.add_static_texture(label='Filebrowser Icon - Drag Files', width=icon_res_drag[0],      height=icon_res_drag[1],      default_value=icon_data_drag,      tag=icon_tag_drag)
@@ -144,6 +149,12 @@ class FileBrowser:
 		_fb_prevpath = default_path
 		_fb_new_folder_popup = None
 
+		# resize file list table callback
+		def _fb_resize_file_list_table_to_win_size(sender, app_data):
+			win_height = dpg.get_item_height(app_data)
+			table_tag = f'{tag_prefix}_main_table'
+			dpg.set_item_height(table_tag, max(win_height-150, 20))
+
 		# utility to display a simple info box (errors, etc)
 		def _fb_show_info_box(content='', label='Filebrowser Error'):
 			with dpg.mutex():
@@ -166,7 +177,7 @@ class FileBrowser:
 
 			if allow_multi_selection:
 				
-				if dpg.is_key_down(dpg.mvKey_Shift):
+				if dpg.is_key_down(dpg.mvKey_ModShift):
 					if not _fb_last_selected:
 						_fb_last_selected = sender
 						dpg.set_value(sender, True)
@@ -183,7 +194,7 @@ class FileBrowser:
 					for item in items_to_set_true:
 						dpg.set_value(item, True)
 
-				elif dpg.is_key_down(dpg.mvKey_Control):
+				elif dpg.is_key_down(dpg.mvKey_ModCtrl):
 					dpg.set_value(sender, dpg.get_value(sender))
 
 				else:
@@ -235,6 +246,7 @@ class FileBrowser:
 					if callback.__code__.co_argcount==1: callback(sender)
 					if callback.__code__.co_argcount==2: callback(sender, files)
 					if callback.__code__.co_argcount==3: callback(sender, files, False)
+					if callback.__code__.co_argcount==4: callback(sender, files, False, self.user_data)
 
 					if show_as_window: 
 						dpg.configure_item(f'{tag_prefix}_window', show=False)
@@ -300,6 +312,8 @@ class FileBrowser:
 					if selection_callback.__code__.co_argcount==0: selection_callback()
 					if selection_callback.__code__.co_argcount==1: selection_callback(sender)
 					if selection_callback.__code__.co_argcount==2: selection_callback(sender, files)
+					if selection_callback.__code__.co_argcount==3: selection_callback(sender, files, False)
+					if selection_callback.__code__.co_argcount==4: selection_callback(sender, files, False, self.user_data)
 
 
 		# formatter for "date modified" column
@@ -794,6 +808,7 @@ class FileBrowser:
 				if callback.__code__.co_argcount==1: callback(sender)
 				if callback.__code__.co_argcount==2: callback(sender, files)
 				if callback.__code__.co_argcount==3: callback(sender, files, cancel_pressed)
+				if callback.__code__.co_argcount==4: callback(sender, files, cancel_pressed, self.user_data)
 
 			if show_as_window: 
 				dpg.configure_item(f'{tag_prefix}_window', show=False)
@@ -813,27 +828,30 @@ class FileBrowser:
 				fb_win_label = label if label not in fb_icons_lst else f'Choose {fb_icons_sfx[fb_icons_lst.index(label)]}'
 
 			fb_win_pos = (dpg.get_mouse_pos()[0]+50, dpg.get_mouse_pos()[1]+80) if pos is None else pos
-
+			
 			if fb_btn_label in fb_icons_lst:
-				try: dpg.add_image_button(texture_tag=fb_btn_label, width=16*icon_size, height=16*icon_size, callback=lambda x: dpg.configure_item(f'{tag_prefix}_window', show=True, pos=fb_win_pos))
-				except: dpg.add_image_button(parent=parent, texture_tag=fb_btn_label, width=16*icon_size, height=16*icon_size, callback=lambda x: dpg.configure_item(f'{tag_prefix}_window', show=True, pos=fb_win_pos))
+				try: dpg.add_image_button(tag=self.tag+'_button', texture_tag=fb_btn_label, width=16*icon_size, height=16*icon_size, callback=lambda x: dpg.configure_item(f'{tag_prefix}_window', show=True, pos=fb_win_pos))
+				except: dpg.add_image_button(tag=self.tag+'_button', parent=parent, texture_tag=fb_btn_label, width=16*icon_size, height=16*icon_size, callback=lambda x: dpg.configure_item(f'{tag_prefix}_window', show=True, pos=fb_win_pos))
+
 				with dpg.tooltip(parent=dpg.last_item()):
 					dpg.add_text(fb_win_label)
 			else:
-				try: dpg.add_button(label=fb_btn_label, callback=lambda x: dpg.configure_item(f'{tag_prefix}_window', show=True, pos=fb_win_pos))
-				except: dpg.add_button(parent=parent, label=fb_btn_label, callback=lambda x: dpg.configure_item(f'{tag_prefix}_window', show=True, pos=fb_win_pos))
+				try: dpg.add_button(tag=self.tag+'_button', label=fb_btn_label, callback=lambda x: dpg.configure_item(f'{tag_prefix}_window', show=True, pos=fb_win_pos))
+				except: dpg.add_button(tag=self.tag+'_button', parent=parent, label=fb_btn_label, callback=lambda x: dpg.configure_item(f'{tag_prefix}_window', show=True, pos=fb_win_pos))
 
 			fb_parent = dpg.add_window(tag=f'{tag_prefix}_window', label=fb_win_label, show=False, modal=modal_window, width=width, height=height, pos=fb_win_pos)
+			
 
 		# UI layout table
 		with dpg.table(
 			tag=f'{tag_prefix}_layout_table',
 			header_row=False, 
-			resizable=False, 
+			resizable=True, 
 			borders_innerV=False, 
 			borders_innerH=False,
+			width=width-20 if not show_as_window else -1,
+			height=max(height-150, 20) if not show_as_window else -1,
 			parent=fb_parent,
-			width=width*0.97,
 			):
 
 			self.root = f'{tag_prefix}_layout_table'
@@ -885,19 +903,24 @@ class FileBrowser:
 			with dpg.table_row(): 
 
 				with dpg.group(horizontal=True):
-					dpg.add_text('10 Folders, 10 Files (10 Sequences)', tag=f'{tag_prefix}_directory_status')
-					dpg.add_spacer(width=50)
-					dpg.add_text('Search:', tag=f'{tag_prefix}_searchbox')
-					with dpg.tooltip(dpg.last_item()):
-						dpg.add_text('Case insensitive search term')
-					dpg.add_input_text(tag=f'{tag_prefix}_filename_filter', width=-1, callback=_fb_populate_files)
+					with dpg.table(header_row=False, policy=dpg.mvTable_SizingStretchSame, resizable=False, borders_innerV=False, borders_innerH=False):
+						dpg.add_table_column(no_resize=True)
+						dpg.add_table_column(no_resize=True, width_fixed =True)
+						dpg.add_table_column(no_resize=True, width_stretch=True)
+
+						with dpg.table_row():
+							dpg.add_text('10 Folders, 10 Files (10 Sequences)', tag=f'{tag_prefix}_directory_status')
+							dpg.add_text('Search:', tag=f'{tag_prefix}_searchbox')
+							with dpg.tooltip(dpg.last_item()):
+								dpg.add_text('Case insensitive search term')
+							dpg.add_input_text(tag=f'{tag_prefix}_filename_filter', width=-1, callback=_fb_populate_files)
 
 			# main file list table
 			with dpg.table_row(): 
 
 				with dpg.table(
 					tag=f'{tag_prefix}_main_table',
-					height=height*0.76,
+					height=max(height-150, 20),
 					resizable=True, 
 					policy=dpg.mvTable_SizingStretchProp, 
 					borders_innerV=True, 
@@ -922,26 +945,31 @@ class FileBrowser:
 			with dpg.table_row(): 
 
 				with dpg.group(horizontal=True):
-					dpg.add_checkbox(label='Collapse sequences', default_value=collapse_sequences, show=collapse_sequences_checkbox, tag=f'{tag_prefix}_collapse_sequences', callback=_fb_populate_files)
-					dpg.add_spacer(width=50)
-					dpg.add_text('File type filter')
-					dpg.add_combo(tag=f'{tag_prefix}_filetype_filter', width=-1, callback=_fb_populate_files)
+					with dpg.table(header_row=False, policy=dpg.mvTable_SizingStretchSame, resizable=False, borders_innerV=False, borders_innerH=False):
+						dpg.add_table_column(no_resize=True)
+						dpg.add_table_column(no_resize=True, width_fixed=True)
+						dpg.add_table_column(no_resize=True, width_stretch=True)
+
+						with dpg.table_row():
+							dpg.add_checkbox(label='Collapse sequences', default_value=collapse_sequences, show=collapse_sequences_checkbox, tag=f'{tag_prefix}_collapse_sequences', callback=_fb_populate_files)
+							dpg.add_text('File type filter')
+							dpg.add_combo(tag=f'{tag_prefix}_filetype_filter', width=-1, callback=_fb_populate_files)
 
 			# OK / Cancel buttons
 			with dpg.table_row(): 
 				with dpg.group(horizontal=True, show=show_ok_cancel):
-					dpg.add_spacer(width=width*0.78)
-					with dpg.group(width=-1):
-						with dpg.table(header_row=False, height=30):
-							dpg.add_table_column()
-							with dpg.table_row():
-								with dpg.group(horizontal=True):
-									dpg.add_button(label="   OK   ", callback=_fb_button_callback, user_data=False)
-									dpg.add_button(label=" Cancel ", callback=_fb_button_callback, user_data=True)
+					with dpg.table(header_row=False, policy=dpg.mvTable_SizingStretchSame, resizable=False, borders_innerV=False, borders_innerH=False):
+						dpg.add_table_column(no_resize=True, width_stretch=True)
+						dpg.add_table_column(no_resize=True, width_fixed=True)
 
+						with dpg.table_row():
+							dpg.add_spacer()
+							with dpg.group(horizontal=True):
+								dpg.add_button(label="   OK   ", callback=_fb_button_callback, user_data=False)
+								dpg.add_button(label=" Cancel ", callback=_fb_button_callback, user_data=True)
 
 		# init handlers
-		if first_instance:
+		if not dpg.does_item_exist(f'{tag_prefix}_edit_path_handler'):
 			
 			# for when user double-clicks breadcrumb items to manually edit path
 			with dpg.item_handler_registry(tag=f'{tag_prefix}_edit_path_handler'):
@@ -956,6 +984,11 @@ class FileBrowser:
 			with dpg.item_handler_registry(tag=f'{tag_prefix}_file_click_handler'):
 				dpg.add_item_clicked_handler(callback=_fb_file_click, button=internal_dpg.mvMouseButton_Left)
 
+			# resizes file list table  height to match window size when show_as_window is activated
+			if show_as_window:
+				with dpg.item_handler_registry(tag=f'{tag_prefix}_resize_fb_window_handler'):
+					dpg.add_item_resize_handler(callback=_fb_resize_file_list_table_to_win_size)
+					dpg.bind_item_handler_registry(f'{tag_prefix}_window', f'{tag_prefix}_resize_fb_window_handler')
 
 		# init UI data
 		_fb_built_filetype_filter()
