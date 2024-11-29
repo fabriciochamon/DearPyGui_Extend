@@ -34,7 +34,7 @@ def add_file_browser(**kwargs):
 	"""
 	A custom file browser with support for collapsed file sequences and extended functionality.
 
-	:param str tag: Unique id for the filebrowser instance (if ommited, will be created automatically based on uuid. Otherwise user is expected to handle clashing tags)
+	:param str tag: Unique id for the filebrowser instance (if omitted, will be created automatically based on uuid. Otherwise user is expected to handle clashing tags)
 	:param str|tuple|list label: Label shown at window title and button widget (if "show_as_window" == True). Can be defined separately as a tuple/list of length 2: ('label on button', 'label on filebrowser window'). Accepts constants: file_browser.ICON_FILE, file_browser.ICON_FILES, file_browser.ICON_FOLDER to show built-in icons as an image button instead of a label.
 	:param int width: Item width
 	:param int height: Item height
@@ -64,7 +64,7 @@ def add_file_browser(**kwargs):
 	:param callable callback: Callback executed when OK/Cancel buttons are pressed (if "show_ok_cancel==True"). Args "sender"(int), "files"(list) and "cancel_pressed"(bool) are available.
 	:param callable selection_callback: Callback executed when user selects files/folders inside the browser. Args "sender"(int), "files"(list) are available.
 
-	:returns: A FileBrowser object. You can access the "root" class attribute to refer to the top most dpg item of the FileBrowser.
+	:returns: A FileBrowser object. You can access the "tag" class attribute to refer to the newly created FileBrowser instance.
 	"""
 	return FileBrowser(**kwargs)
 
@@ -89,7 +89,7 @@ def add_layout(layout, **kwargs):
 		- halign: horizontal alignment mode  (left | center | right)
 		- valign: vertical alignment mode    (top  | center | bottom)
 		
-		*If defined, global layout alignment options will be used for all columns. (Any column can override this value with its own alignment parms).
+		important: If defined, global layout alignment options will be used for all columns. (Any column can override this value with its own alignment parms).
 	
 	ROW - a row item. Accepts 1 positional parameter: 
 		- size: row height as a normalized 0-1 value. (If omitted, remaining height will be automatically distributed between all the rows without this parm)

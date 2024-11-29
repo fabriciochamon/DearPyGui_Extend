@@ -19,11 +19,11 @@ sys.path.insert(0, os.path.abspath('../venv/lib/python3.10/site-packages/'))
 # -- Project information -----------------------------------------------------
 
 project = 'DearPyGui Extend'
-copyright = '2023, Fabricio Chamon'
+copyright = '2024, Fabricio Chamon'
 author = 'Fabricio Chamon'
 
 # The full version, including alpha/beta/rc tags
-release = '0.0.1'
+release = '0.1.5'
 
 
 # -- General configuration ---------------------------------------------------

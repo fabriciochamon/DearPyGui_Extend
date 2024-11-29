@@ -1,35 +1,12 @@
 dearpygui\_extend package
 =========================
 
-Submodules
-----------
-
-dearpygui\_extend.file\_browser module
---------------------------------------
-
-.. automodule:: dearpygui_extend.file_browser
-   :members:
-   :show-inheritance:
-
-dearpygui\_extend.layout module
--------------------------------
-
-.. automodule:: dearpygui_extend.layout
-   :members:
-   :show-inheritance:
-.. image:: layout.png
-
-dearpygui\_extend.movable\_group module
----------------------------------------
-
-.. automodule:: dearpygui_extend.movable_group
-   :members:
-   :show-inheritance:
-
 Module contents
 ---------------
-
+.. image:: layout.png
 .. automodule:: dearpygui_extend
    :members:
    :undoc-members:
    :show-inheritance:
+
+
