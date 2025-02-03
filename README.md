@@ -47,7 +47,7 @@ import dearpygui.dearpygui as dpg
 import dearpygui_extend as dpge
 
 dpge.add_file_browser(
-	initial_path='~/Downloads/images', 
+	default_path='~/Downloads/images', 
 	collapse_sequences=True, 
 	sequence_padding='#'
 )
