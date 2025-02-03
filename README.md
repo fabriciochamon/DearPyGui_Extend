@@ -39,9 +39,6 @@ Features:
 * Sorting (smart sorting for collapsed sequences)
 * Draggable items (ability to expand file sequences on a drop callback)
 
-> [!NOTE]
-> Requires [Fileseq](https://pypi.org/project/Fileseq/) package: `pip install fileseq`
-
 ![](./resources/fileseq_browser.gif)
 
 Usage:
