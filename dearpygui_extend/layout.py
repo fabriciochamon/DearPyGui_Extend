@@ -1,9 +1,12 @@
 import dearpygui.dearpygui as dpg
 import random
+import itertools
 
 class Layout:
+	_unique_frame_counter = itertools.count(1)
 
 	# layout initialization (called from frame callback)
+	@staticmethod
 	def init_layout(sender, app_data, user_data):
 		top_level_alias = user_data['top']
 		debug = user_data['debug']
@@ -139,6 +142,7 @@ class Layout:
 		self.border=border
 		self.resizable=resizable
 		self.root=None
+		self.unique_prefix = str(dpg.generate_uuid())
 
 		# check if string can be converted to float
 		def isFloat(s):
@@ -225,7 +229,7 @@ class Layout:
 					parent = item['parent'] if item['parent'] != -1 else dpg.last_item()
 				else:
 					parent = parent_item
-				tag_table = item['tag'] if item['tag'] is not None else f'__layout_table_{item["id"]}'
+				tag_table = item['tag'] if item['tag'] is not None else f'__layout_table_{self.unique_prefix}_{item["id"]}'
 				dpg.add_table(header_row=False, tag=tag_table, parent=parent)
 				
 				# add columns
@@ -247,7 +251,7 @@ class Layout:
 				col_no_size    = len([x for x in cols if x['size'] is None])
 				col_size_split = (1-col_size_sum)/col_no_size if col_no_size>0 else 1
 				for col in cols:
-					tag_col = f'__layout_col_{col["id"]}'
+					tag_col = f'__layout_col_{self.unique_prefix}_{col["id"]}'
 					col_size = col['size'] if col['size'] is not None else col_size_split
 					dpg.add_table_column(tag=tag_col, parent=tag_table, init_width_or_weight=col_size)
 
@@ -270,12 +274,12 @@ class Layout:
 				row_no_size    = len([x for x in rows if x['size'] is None])
 				row_size_split = (1-row_size_sum)/row_no_size if row_no_size > 0 else 1
 				for row in rows:
-					tag_row = f'__layout_row_{row["id"]}'
+					tag_row = f'__layout_row_{self.unique_prefix}_{row["id"]}'
 					row_size = row['size'] if row['size'] is not None else row_size_split
 					dpg.add_table_row(parent=tag_table, tag=tag_row)
 
 					for col in cols:
-						tag_cw = f'__layout_cw_{row["id"]}_{col["id"]}'
+						tag_cw = f'__layout_cw_{self.unique_prefix}_{row["id"]}_{col["id"]}'
 						col_has_children = len(get_subelements(col['id'], layout, 'col'))>0 or len(get_subelements(col['id'], layout, 'row'))>0
 						user_data_cw = '' if row['size']==1 else {'type': '__layout_item', 'height': row_size}
 						dpg.add_child_window(tag=tag_cw, parent=tag_row, user_data=user_data_cw)
@@ -300,5 +304,6 @@ class Layout:
 		if self.parent is None: 
 			self.parent=dpg.last_item()
 		build_table(parsedlayout[0], parsedlayout, self.parent, self.debug)
-		dpg.set_frame_callback(2, Layout.init_layout, user_data={'top': self.root, 'debug': self.debug, 'border': self.border, 'resizable': self.resizable})
+		next_unique_frame = dpg.get_frame_count() + next(Layout._unique_frame_counter)
+		dpg.set_frame_callback(next_unique_frame, Layout.init_layout, user_data={'top': self.root, 'debug': self.debug, 'border': self.border, 'resizable': self.resizable})
 
