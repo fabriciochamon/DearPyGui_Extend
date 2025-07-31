@@ -81,6 +81,7 @@ def add_layout(layout, **kwargs):
 	:param bool border: Displays a border around panes.
 	:param bool resizable: Allow pane columns to be resized.
 	:param bool debug: Displays random colors as indication for each pane.
+	:param float height_factor: Limits the layout height within its parent container (value range: 0-1)
 
 	:returns: A Layout object. You can access the "root" class attribute to refer to the top most dpg item of the layout.
 

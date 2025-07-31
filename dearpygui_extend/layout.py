@@ -1,17 +1,15 @@
 import dearpygui.dearpygui as dpg
 import random
-import itertools
 
 class Layout:
-	_unique_frame_counter = itertools.count(1)
 
-	# layout initialization (called from frame callback)
-	@staticmethod
-	def init_layout(sender, app_data, user_data):
-		top_level_alias = user_data['top']
-		debug = user_data['debug']
-		border = user_data['border']
-		resizable = user_data['resizable']
+	# layout initialization
+	def init(self):
+		top_level_alias = self.root
+		debug = self.debug
+		border = self.border
+		resizable = self.resizable
+		height_factor = self.height_factor
 
 		def auto_align(item, alignment_type: int, x_align: float = 0.5, y_align: float = 0.5):
 			def _center_h(_s, _d, data):
@@ -32,20 +30,30 @@ class Layout:
 				newY = (parentWidth // 2 - height // 2) * data[1] * 2
 				dpg.set_item_pos(data[0], [dpg.get_item_pos(data[0])[0], newY])
 
+			handler_reg_tag = f'handler_reg_{top_level_alias}_{item}'
+			handler_tag_H = f'handler_center_H_{top_level_alias}_{item}'
+			handler_tag_V = f'handler_center_V_{top_level_alias}_{item}'
+			
+			# alignment
 			if 0 <= alignment_type <= 2:
-				with dpg.item_handler_registry():
-					if alignment_type == 0:
-						# horizontal only alignment
-						dpg.add_item_visible_handler(callback=_center_h, user_data=[item, x_align])
-					elif alignment_type == 1:
-						# vertical only alignment
-						dpg.add_item_visible_handler(callback=_center_v, user_data=[item, y_align])
-					elif alignment_type == 2:
-						# both horizontal and vertical alignment
-						dpg.add_item_visible_handler(callback=_center_h, user_data=[item, x_align])
-						dpg.add_item_visible_handler(callback=_center_v, user_data=[item, y_align])
-
-				dpg.bind_item_handler_registry(item, dpg.last_container())
+				if not dpg.does_alias_exist(handler_reg_tag):
+					with dpg.item_handler_registry(tag=handler_reg_tag):
+						if alignment_type == 0:
+							# horizontal only alignment
+							if not dpg.does_alias_exist(handler_tag_H):
+								dpg.add_item_visible_handler(tag=handler_tag_H, callback=_center_h, user_data=[item, x_align])
+						elif alignment_type == 1:
+							# vertical only alignment
+							if not dpg.does_alias_exist(handler_tag_V):
+								dpg.add_item_visible_handler(tag=handler_tag_V, callback=_center_v, user_data=[item, y_align])
+						elif alignment_type == 2:
+							# both horizontal and vertical alignment
+							if not dpg.does_alias_exist(handler_tag_H):
+								dpg.add_item_visible_handler(tag=handler_tag_H, callback=_center_h, user_data=[item, x_align])
+							if not dpg.does_alias_exist(handler_tag_V):
+								dpg.add_item_visible_handler(tag=handler_tag_V, callback=_center_v, user_data=[item, y_align])
+					
+				dpg.bind_item_handler_registry(item, handler_reg_tag)
 
 		def align_items(parent):
 			children = dpg.get_item_children(parent, 1)
@@ -101,7 +109,6 @@ class Layout:
 							with dpg.theme_component(dpg.mvChildWindow):
 								dpg.add_theme_color(dpg.mvThemeCol_ChildBg, (r*150,g*150,b*150))
 					dpg.bind_item_theme(item, theme_name)
-			
 
 		def get_parent_window(item):
 			parent = dpg.get_item_parent(item)
@@ -109,40 +116,49 @@ class Layout:
 				parent = dpg.get_item_parent(parent)
 			return parent 
 
-		def adjust_layout(item):
+		def adjust_layout(item, level=0, height_factor=height_factor):
+			top_level_parent = dpg.get_item_parent(top_level_alias)
 			children = dpg.get_item_children(item, 1)
 			configure_by_type(item)
 			for child in children:
 				user_data=dpg.get_item_configuration(child)['user_data']
 				if isinstance(user_data, dict) and 'type' in user_data.keys() and user_data['type']=='__layout_item':
-					dpg.configure_item(child, height=dpg.get_item_rect_size(get_parent_window(child))[1]*user_data['height'])
-				adjust_layout(child)
+					#height = dpg.get_item_rect_size(get_parent_window(child))[1]
+					height = dpg.get_item_rect_size(top_level_parent)[1]
+					height *= user_data['height']
+					height *= height_factor
+					dpg.configure_item(child, height=height)
+				adjust_layout(child, level=level+1, height_factor=height_factor)
 
 		# main window theme
-		with dpg.theme() as layout_parent_theme:
-			with dpg.theme_component(dpg.mvChildWindow):
-				dpg.add_theme_style(dpg.mvStyleVar_WindowPadding, 0)
-			with dpg.theme_component(dpg.mvTable):
-				dpg.add_theme_style(dpg.mvStyleVar_CellPadding, 0)
-		dpg.bind_item_theme(get_parent_window(top_level_alias), layout_parent_theme)
+		tag_theme = f'__layout_{top_level_alias}_theme'
+		if not dpg.does_alias_exist(tag_theme):
+			with dpg.theme(tag=tag_theme):
+				with dpg.theme_component(dpg.mvChildWindow):
+					dpg.add_theme_style(dpg.mvStyleVar_WindowPadding, 0)
+				with dpg.theme_component(dpg.mvTable):
+					dpg.add_theme_style(dpg.mvStyleVar_CellPadding, 0)
+		dpg.bind_item_theme(get_parent_window(top_level_alias), tag_theme)
 
 		# main window resize handler
-		with dpg.item_handler_registry() as layout_parent_resize_handler:
-			dpg.add_item_resize_handler(callback=lambda: adjust_layout(top_level_alias))
-		dpg.bind_item_handler_registry(get_parent_window(top_level_alias), layout_parent_resize_handler)
+		tag_handler = f'__layout_{top_level_alias}_handler'
+		if not dpg.does_alias_exist(tag_handler):
+			with dpg.item_handler_registry(tag=tag_handler):
+				dpg.add_item_resize_handler(callback=lambda: adjust_layout(top_level_alias))
+		dpg.bind_item_handler_registry(get_parent_window(top_level_alias), tag_handler)
 
 		# adjust layout heights
 		adjust_layout(top_level_alias)
 
 
-	def __init__(self, layout='LAYOUT new_layout', parent=None, border=False, resizable=False, debug=False):
+	def __init__(self, layout='LAYOUT new_layout', parent=None, border=False, resizable=False, debug=False, height_factor=1):
 		self.layout=layout
 		self.parent=parent
 		self.debug=debug
 		self.border=border
 		self.resizable=resizable
-		self.root=None
-		self.unique_prefix = str(dpg.generate_uuid())
+		self.height_factor=height_factor
+		self.root=None		
 
 		# check if string can be converted to float
 		def isFloat(s):
@@ -157,6 +173,12 @@ class Layout:
 			parents = [-1]
 			last_level = 0
 			ids = []
+
+			layout_name = 'default_layout'
+			for i, line in enumerate(layout.split('\n')):
+				if line.startswith('LAYOUT'):
+					layout_name = line.split(' ')[1].strip()
+					break
 
 			for i, line in enumerate(layout.split('\n')):
 				contents = line.strip()
@@ -202,11 +224,12 @@ class Layout:
 						'halign': halign,
 						'valign': valign,
 						'contents': contents,
+						'layout_name': layout_name,
 					}
 					entry['size']=None if entry['level']==0 else entry['size']
 					layout_list.append(entry)
 					last_level = level
-			
+
 			return layout_list
 
 
@@ -229,7 +252,7 @@ class Layout:
 					parent = item['parent'] if item['parent'] != -1 else dpg.last_item()
 				else:
 					parent = parent_item
-				tag_table = item['tag'] if item['tag'] is not None else f'__layout_table_{self.unique_prefix}_{item["id"]}'
+				tag_table = item['tag'] if item['tag'] is not None else f'__layout_{item["layout_name"]}_table_{item["id"]}'
 				dpg.add_table(header_row=False, tag=tag_table, parent=parent)
 				
 				# add columns
@@ -237,7 +260,7 @@ class Layout:
 				has_cols = len(cols)>0
 				if len(cols)==0:
 					cols=[{
-						'id': dpg.generate_uuid()+1000,
+						'id': f'__layout_{item["layout_name"]}_{dpg.generate_uuid()+1000}',
 						'level': item['level']+1,
 						'parent': item['id'],
 						'type': 'COL',
@@ -251,7 +274,7 @@ class Layout:
 				col_no_size    = len([x for x in cols if x['size'] is None])
 				col_size_split = (1-col_size_sum)/col_no_size if col_no_size>0 else 1
 				for col in cols:
-					tag_col = f'__layout_col_{self.unique_prefix}_{col["id"]}'
+					tag_col = f'__layout_{item["layout_name"]}_col_{col["id"]}'
 					col_size = col['size'] if col['size'] is not None else col_size_split
 					dpg.add_table_column(tag=tag_col, parent=tag_table, init_width_or_weight=col_size)
 
@@ -260,7 +283,7 @@ class Layout:
 				has_rows = len(rows)>0
 				if len(rows)==0:
 					rows=[{
-						'id': dpg.generate_uuid()+1000,
+						'id': f'__layout_{item["layout_name"]}_{dpg.generate_uuid()+1000}',
 						'level': item['level']+1,
 						'parent': item['id'],
 						'type': 'ROW',
@@ -274,14 +297,15 @@ class Layout:
 				row_no_size    = len([x for x in rows if x['size'] is None])
 				row_size_split = (1-row_size_sum)/row_no_size if row_no_size > 0 else 1
 				for row in rows:
-					tag_row = f'__layout_row_{self.unique_prefix}_{row["id"]}'
+					tag_row = f'__layout_{item["layout_name"]}_row_{row["id"]}'
 					row_size = row['size'] if row['size'] is not None else row_size_split
 					dpg.add_table_row(parent=tag_table, tag=tag_row)
 
 					for col in cols:
-						tag_cw = f'__layout_cw_{self.unique_prefix}_{row["id"]}_{col["id"]}'
+						tag_cw = f'__layout_{item["layout_name"]}_cw_{row["id"]}_{col["id"]}'
 						col_has_children = len(get_subelements(col['id'], layout, 'col'))>0 or len(get_subelements(col['id'], layout, 'row'))>0
 						user_data_cw = '' if row['size']==1 else {'type': '__layout_item', 'height': row_size}
+
 						dpg.add_child_window(tag=tag_cw, parent=tag_row, user_data=user_data_cw)
 						if not col_has_children and col['tag'] is not None:
 							level0 = [x for x in layout if x['level']==0][0]
@@ -303,7 +327,8 @@ class Layout:
 		parsedlayout = parse_layout(layout=self.layout)
 		if self.parent is None: 
 			self.parent=dpg.last_item()
+		
 		build_table(parsedlayout[0], parsedlayout, self.parent, self.debug)
-		next_unique_frame = dpg.get_frame_count() + next(Layout._unique_frame_counter)
-		dpg.set_frame_callback(next_unique_frame, Layout.init_layout, user_data={'top': self.root, 'debug': self.debug, 'border': self.border, 'resizable': self.resizable})
-
+		dpg.set_frame_callback(2, self.init)
+		
+		
