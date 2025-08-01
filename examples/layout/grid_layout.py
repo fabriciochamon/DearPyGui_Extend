@@ -19,9 +19,9 @@ LAYOUT grid_3x3 center center
 		COL row3_col3
 '''
 
+# you can use the "height_factor" arg as a multiplier for the layout height inside its container (values: 0-1) 
 with dpg.window(tag='main_window'):
-	dpge.add_layout(layout, debug=True)
-
+	mylayout = dpge.add_layout(layout, debug=True, height_factor=0.98)
 
 dpg.create_viewport()
 dpg.set_primary_window('main_window', True)

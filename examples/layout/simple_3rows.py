@@ -14,7 +14,7 @@ LAYOUT simple_layout center center
 '''
 
 with dpg.window(tag='main_window'):
-	dpge.add_layout(layout, debug=True)
+	dpge.add_layout(layout, debug=True, height_factor=0.98)
 
 
 dpg.create_viewport()
